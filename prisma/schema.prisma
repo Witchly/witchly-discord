@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id // Discord User ID
+  warns     Warn[]
+  tickets   Ticket[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Warn {
+  id          Int      @id @default(autoincrement())
+  reason      String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  moderatorId String
+  createdAt   DateTime @default(now())
+}
+
+model Ticket {
+  id        Int      @id @default(autoincrement())
+  channelId String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  status    String   @default("OPEN") // OPEN, CLOSED
+  createdAt DateTime @default(now())
+}
+
+model GuildConfig {
+  id               String @id // Guild ID
+  logChannelId     String?
+  welcomeChannelId String?
+  ticketCategoryId String?
+}
