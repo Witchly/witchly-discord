@@ -20,5 +20,6 @@ export const config = {
     docs: 'https://docs.witchly.host',
     logo: 'https://witchly.host/images/logo.png',
     banner: 'https://witchly.host/images/witchly-banner.png',
-  }
+  },
+  ticketLogChannelId: '1466656020666257622',
 };

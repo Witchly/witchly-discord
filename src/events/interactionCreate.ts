@@ -1,4 +1,4 @@
-import { Events, ChatInputCommandInteraction, Interaction, ChannelType, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, TextChannel } from 'discord.js';
+import { Events, Interaction, ChannelType, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, TextChannel, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, EmbedBuilder } from 'discord.js';
 import { BotEvent } from '../types';
 import { commands } from '../handlers/commandHandler';
 import { logger } from '../utils/logger';
@@ -30,7 +30,79 @@ const event: BotEvent = {
       const { customId } = interaction;
 
       if (customId === 'create_ticket') {
+        // Show Modal instead of creating immediately
+        const modal = new ModalBuilder()
+          .setCustomId('ticket_modal')
+          .setTitle('Open a Support Ticket');
+
+        const reasonInput = new TextInputBuilder()
+          .setCustomId('ticket_reason')
+          .setLabel("Reason for ticket")
+          .setStyle(TextInputStyle.Paragraph)
+          .setPlaceholder('Please describe your issue here...')
+          .setRequired(true);
+
+        const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
+        modal.addComponents(firstActionRow);
+
+        await interaction.showModal(modal);
+      }
+
+      if (customId === 'close_ticket') {
+        const channel = interaction.channel as TextChannel;
+        await interaction.deferReply();
+
+        // 1. Fetch Ticket Data
+        const ticket = await prisma.ticket.findFirst({
+          where: { channelId: channel.id },
+          include: { user: true }
+        });
+
+        if (ticket) {
+          await prisma.ticket.update({ where: { id: ticket.id }, data: { status: 'CLOSED' } });
+        }
+
+        // 2. Generate Transcript
+        const messages = await channel.messages.fetch({ limit: 100 });
+        const transcriptContent = messages.reverse().map(m => {
+            const time = m.createdAt.toLocaleString();
+            return `[${time}] ${m.author.tag}: ${m.content} ${m.attachments.size > 0 ? '[Attachment]' : ''}`;
+          }).join('\n');
+
+        const buffer = Buffer.from(transcriptContent, 'utf-8');
+        const attachment = new AttachmentBuilder(buffer, { name: `transcript-${channel.name}.txt` });
+
+        // 3. Log to Log Channel
+        const logChannel = interaction.guild?.channels.cache.get(config.ticketLogChannelId) as TextChannel;
+        
+        if (logChannel) {
+          const logEmbed = new EmbedBuilder()
+            .setTitle('Ticket Closed')
+            .setColor(config.colors.primary)
+            .addFields(
+              { name: 'Ticket Owner', value: ticket ? `<@${ticket.userId}>` : 'Unknown', inline: true },
+              { name: 'Closed By', value: interaction.user.toString(), inline: true },
+              { name: 'Opened At', value: ticket?.createdAt.toDateString() || 'Unknown', inline: true }
+            )
+            .setTimestamp();
+
+          await logChannel.send({ embeds: [logEmbed], files: [attachment] });
+        }
+
+        // 4. Delete Channel
+        await interaction.editReply('Ticket closed. Deleting channel in 5 seconds...');
+        setTimeout(async () => {
+          await channel.delete().catch(() => {});
+        }, 5000);
+      }
+    }
+
+    // Modals
+    if (interaction.isModalSubmit()) {
+      if (interaction.customId === 'ticket_modal') {
         await interaction.deferReply({ ephemeral: true });
+        
+        const reason = interaction.fields.getTextInputValue('ticket_reason');
 
         // Check if user has open ticket
         const existingTicket = await prisma.ticket.findFirst({
@@ -38,15 +110,13 @@ const event: BotEvent = {
         });
 
         if (existingTicket) {
-          // Check if channel still exists
-          const channel = interaction.guild?.channels.cache.get(existingTicket.channelId);
-          if (channel) {
-            await interaction.editReply(`You already have an open ticket: ${channel.toString()}`);
-            return;
-          } else {
-            // Cleanup ghost ticket
-            await prisma.ticket.update({ where: { id: existingTicket.id }, data: { status: 'CLOSED' } });
-          }
+           const channel = interaction.guild?.channels.cache.get(existingTicket.channelId);
+           if (channel) {
+             await interaction.editReply(`You already have an open ticket: ${channel.toString()}`);
+             return;
+           } else {
+             await prisma.ticket.update({ where: { id: existingTicket.id }, data: { status: 'CLOSED' } });
+           }
         }
 
         // Create Channel
@@ -63,7 +133,6 @@ const event: BotEvent = {
               id: interaction.user.id,
               allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
             },
-            // Allow bot
             {
               id: config.clientId,
               allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels],
@@ -86,41 +155,20 @@ const event: BotEvent = {
           }
         });
 
-        // Send Controls
+        // Send Welcome & Controls
         const row = new ActionRowBuilder<ButtonBuilder>()
           .addComponents(
-            new ButtonBuilder().setCustomId('close_ticket').setLabel('Close Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒'),
-            new ButtonBuilder().setCustomId('transcript_ticket').setLabel('Transcript').setStyle(ButtonStyle.Secondary).setEmoji('📄')
+            new ButtonBuilder().setCustomId('close_ticket').setLabel('Close Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒')
           );
         
         const welcomeEmbed = createEmbed(
           'Ticket Created',
-          `Hello ${interaction.user.toString()}, support will be with you shortly.\n\nClick 🔒 to close this ticket.`, 
+          `Hello ${interaction.user.toString()}, support will be with you shortly.\n\n**Reason:**\n${reason}`,
           config.colors.primary
         );
 
         await channel.send({ content: `${interaction.user.toString()}`, embeds: [welcomeEmbed], components: [row] });
         await interaction.editReply(`Ticket created: ${channel.toString()}`);
-      }
-
-      if (customId === 'close_ticket') {
-        const channel = interaction.channel as TextChannel;
-        await interaction.reply({ content: 'Ticket will be closed in 5 seconds...' });
-        
-        // Update DB
-        const ticket = await prisma.ticket.findFirst({ where: { channelId: channel.id } });
-        if (ticket) {
-          await prisma.ticket.update({ where: { id: ticket.id }, data: { status: 'CLOSED' } });
-        }
-
-        setTimeout(async () => {
-          await channel.delete().catch(() => {});
-        }, 5000);
-      }
-
-      if (customId === 'transcript_ticket') {
-        await interaction.reply({ content: 'Transcript feature coming soon!', ephemeral: true });
-        // TODO: Implement transcript (fetch messages, generate HTML/Text, send file)
       }
     }
   },
