@@ -1,7 +1,8 @@
-import { Events, ActivityType } from 'discord.js';
+import { Events, ActivityType, TextChannel } from 'discord.js';
 import { BotEvent } from '../types';
 import { logger } from '../utils/logger';
 import { updateGuildInvites } from '../utils/inviteCache';
+import { config } from '../utils/config';
 
 const event: BotEvent = {
   name: Events.ClientReady,
@@ -34,6 +35,35 @@ const event: BotEvent = {
       client.user.setActivity(activity.name, { type: activity.type, url: activity.url });
       index = (index + 1) % activities.length;
     }, 15000);
+
+    // Auto-Bump Reminder/Execution (Every 120 minutes)
+    setInterval(async () => {
+      try {
+        const channel = await client.channels.fetch(config.bumpChannelId);
+        if (channel && channel instanceof TextChannel) {
+          await channel.send('/bump');
+          logger.info('Sent /bump message to the promotion channel.');
+
+          // Wait for Disboard response (Bot ID: 302050872383242240)
+          const collector = channel.createMessageCollector({
+            filter: (m) => m.author.id === '302050872383242240',
+            time: 15000,
+            max: 1,
+          });
+
+          collector.on('end', (collected) => {
+            if (collected.size === 0) {
+              channel.send(`⚠️ **Auto-Bump failed or was ignored by Disboard.**\nSince I'm a bot, Disboard might ignore my text commands. Please bump manually using \`/bump\`.`);
+              logger.warn('Auto-bump confirmation not received from Disboard.');
+            } else {
+              logger.success('Auto-bump confirmed by Disboard bot.');
+            }
+          });
+        }
+      } catch (error) {
+        logger.error(`Failed to send auto-bump: ${error}`);
+      }
+    }, 120 * 60 * 1000);
   },
 };
 

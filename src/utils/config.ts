@@ -24,4 +24,5 @@ export const config = {
   ticketLogChannelId: '1466656020666257622',
   moderationLogChannelId: '1466656093148283001',
   welcomeChannelId: '1459186361171968236',
+  bumpChannelId: '1467055707475017895',
 };
