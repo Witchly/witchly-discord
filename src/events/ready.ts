@@ -41,8 +41,16 @@ const event: BotEvent = {
       try {
         const channel = await client.channels.fetch(config.bumpChannelId);
         if (channel && channel instanceof TextChannel) {
-          await channel.send('@everyone **Time to bump!** Please use `/bump` to keep Witchly at the top of Disboard.');
-          logger.info('Sent bump reminder to the promotion channel.');
+          await channel.send(
+            '@everyone **Time to bump Witchly!** 🚀\n\n' +
+            'Please run the `/bump` command for:\n' +
+            '1️⃣ **Disboard**\n' +
+            '2️⃣ **Discadia**\n' +
+            '3️⃣ **Discord.me**\n' +
+            '4️⃣ **Discordservers.com**\n\n' +
+            '*Note: Some bots may have longer cooldowns, but please check all of them!*'
+          );
+          logger.info('Sent multi-bot bump reminder to the promotion channel.');
         }
       } catch (error) {
         logger.error(`Failed to send bump reminder: ${error}`);
