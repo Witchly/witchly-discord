@@ -36,34 +36,22 @@ const event: BotEvent = {
       index = (index + 1) % activities.length;
     }, 15000);
 
-    // Auto-Bump Reminder/Execution (Every 120 minutes)
-    setInterval(async () => {
+    // Auto-Bump Reminder (Every 120 minutes)
+    const sendBumpReminder = async () => {
       try {
         const channel = await client.channels.fetch(config.bumpChannelId);
         if (channel && channel instanceof TextChannel) {
-          await channel.send('/bump');
-          logger.info('Sent /bump message to the promotion channel.');
-
-          // Wait for Disboard response (Bot ID: 302050872383242240)
-          const collector = channel.createMessageCollector({
-            filter: (m) => m.author.id === '302050872383242240',
-            time: 15000,
-            max: 1,
-          });
-
-          collector.on('end', (collected) => {
-            if (collected.size === 0) {
-              channel.send(`⚠️ **Auto-Bump failed or was ignored by Disboard.**\nSince I'm a bot, Disboard might ignore my text commands. Please bump manually using \`/bump\`.`);
-              logger.warn('Auto-bump confirmation not received from Disboard.');
-            } else {
-              logger.success('Auto-bump confirmed by Disboard bot.');
-            }
-          });
+          await channel.send('@everyone **Time to bump!** Please use `/bump` to keep Witchly at the top of Disboard.');
+          logger.info('Sent bump reminder to the promotion channel.');
         }
       } catch (error) {
-        logger.error(`Failed to send auto-bump: ${error}`);
+        logger.error(`Failed to send bump reminder: ${error}`);
       }
-    }, 120 * 60 * 1000);
+    };
+
+    // Send initial reminder and start interval
+    sendBumpReminder();
+    setInterval(sendBumpReminder, 120 * 60 * 1000);
   },
 };
 
