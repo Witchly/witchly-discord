@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
 import { loadCommands } from './handlers/commandHandler';
 import { loadEvents } from './handlers/eventHandler';
 import { config } from './utils/config';
@@ -11,7 +11,8 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildVoiceStates,
-  ]
+  ],
+  partials: [Partials.Message, Partials.Channel, Partials.GuildMember, Partials.User],
 });
 
 // Load handlers

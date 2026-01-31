@@ -7,12 +7,15 @@ import { getLogChannel } from '../utils/modUtils';
 const event: BotEvent = {
   name: Events.MessageDelete,
   execute: async (message: Message) => {
-    if (message.partial || message.author?.bot) return;
+    // If we have the author and it's a bot, ignore. If author is null (partial), proceed.
+    if (message.author?.bot) return;
 
     const channel = await getLogChannel(message.guild!);
     if (!channel) return;
 
     let executor = null;
+    let targetUser = message.author; // May be null if partial
+
     try {
       const fetchedLogs = await message.guild!.fetchAuditLogs({
         limit: 1,
@@ -20,16 +23,19 @@ const event: BotEvent = {
       });
       const deletionLog = fetchedLogs.entries.first();
 
-      // Check if log entry is recent (within 5s) and matches target/channel
+      // Check if log entry is recent (within 5s) and matches channel
       if (
         deletionLog &&
         deletionLog.target &&
-        deletionLog.target.id === message.author.id &&
         // @ts-ignore - 'extra' exists on MessageDelete type
         deletionLog.extra.channel.id === message.channel.id &&
         (Date.now() - deletionLog.createdTimestamp) < 5000
       ) {
-        executor = deletionLog.executor;
+        // If we didn't know the author (partial), or if it matches, use the log details
+        if (!targetUser || targetUser.id === deletionLog.target.id) {
+           executor = deletionLog.executor;
+           if (!targetUser) targetUser = deletionLog.target as any; // Cast to User
+        }
       }
     } catch (e) {
       console.error('Failed to fetch audit logs for delete:', e);
@@ -39,9 +45,12 @@ const event: BotEvent = {
       ? `Deleted by **${executor.tag}**` 
       : 'Self-deleted (or unknown)';
 
+    const userTag = targetUser ? `${targetUser.tag} (${targetUser.id})` : 'Unknown User (Uncached)';
+    const msgContent = message.content ? message.content : '*[Content Unavailable - Message Uncached]*';
+
     const embed = createEmbed(
       'Message Deleted',
-      `**User:** ${message.author.tag} (${message.author.id})\n**Channel:** ${message.channel.toString()}\n**Action:** ${deleteType}\n\n**Content:**\n${message.content || '*[No Content/Image]*'}`,
+      `**User:** ${userTag}\n**Channel:** ${message.channel.toString()}\n**Action:** ${deleteType}\n\n**Content:**\n${msgContent}`,
       config.colors.error
     );
 
