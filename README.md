@@ -12,7 +12,12 @@ The official Discord bot for **Witchly.host**, designed to provide seamless inte
 ### 🎫 Support & Tickets
 - **Modal-Based Tickets:** `/ticketpanel` allows users to open tickets with specific reasons via Discord modals.
 - **Transcripts:** Automatically saves and logs ticket transcripts to a dedicated channel upon closing.
-- **Docs Integration:** `/docs <query>` uses Fuse.js to search through indexed Witchly documentation for quick answers.
+- **Docs Integration:** `/docs <query>` uses Fuse.js to search through indexed Witchly documentation for quick answers. *Note: Docs are indexed from the GitBook repo on bot startup.*
+
+### 📢 Promotion & Growth
+- **Bump Reminder:** Sends an `@everyone` reminder every 120 minutes in the promotion channel to bump Witchly on 7 different platforms:
+  - Disboard, Discadia, Discord.me, Discordservers.com, Top.gg, Discord Home, and Top-Servers.net.
+  - Includes direct voting links where applicable to maximize ranking efficiency.
 
 ### 🎮 Game Server Integration
 - **Server Status:** `/serverstatus` provides real-time status (online/offline, player count, version) for:
