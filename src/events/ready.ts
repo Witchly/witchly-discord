@@ -62,7 +62,7 @@ const event: BotEvent = {
 
     // Send initial reminder and start interval
     sendBumpReminder();
-    setInterval(sendBumpReminder, 120 * 60 * 1000);
+    setInterval(sendBumpReminder, 12 * 60 * 60 * 1000);
   },
 };
 

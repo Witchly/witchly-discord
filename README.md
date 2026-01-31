@@ -15,7 +15,7 @@ The official Discord bot for **Witchly.host**, designed to provide seamless inte
 - **Docs Integration:** `/docs <query>` uses Fuse.js to search through indexed Witchly documentation for quick answers. *Note: Docs are indexed from the GitBook repo on bot startup.*
 
 ### 📢 Promotion & Growth
-- **Bump Reminder:** Sends an `@everyone` reminder every 120 minutes in the promotion channel to bump Witchly on 7 different platforms:
+- **Bump Reminder:** Sends an `@everyone` reminder every 12 hours in the promotion channel to bump Witchly on 7 different platforms:
   - Disboard, Discadia, Discord.me, Discordservers.com, Top.gg, Discord Home, and Top-Servers.net.
   - Includes direct voting links where applicable to maximize ranking efficiency.
 
