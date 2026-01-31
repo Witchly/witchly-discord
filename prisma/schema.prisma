@@ -14,6 +14,9 @@ model User {
   id        String   @id // Discord User ID
   warns     Warn[]
   tickets   Ticket[]
+  inviterId String?
+  inviter   User?    @relation("Invites", fields: [inviterId], references: [id])
+  invitees  User[]    @relation("Invites")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

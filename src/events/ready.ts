@@ -1,12 +1,18 @@
 import { Events, ActivityType } from 'discord.js';
 import { BotEvent } from '../types';
 import { logger } from '../utils/logger';
+import { updateGuildInvites } from '../utils/inviteCache';
 
 const event: BotEvent = {
   name: Events.ClientReady,
   once: true,
-  execute(client) {
+  async execute(client) {
     logger.success(`Ready! Logged in as ${client.user.tag}`);
+
+    // Initialize Invite Cache
+    for (const guild of client.guilds.cache.values()) {
+      await updateGuildInvites(guild);
+    }
 
     const activities = [
       { name: 'Minecraft', type: ActivityType.Playing },
