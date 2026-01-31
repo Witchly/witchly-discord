@@ -4,20 +4,22 @@ import { createEmbed } from '../utils/embeds';
 import { config } from '../utils/config';
 import { prisma } from '../utils/prisma';
 import { logger } from '../utils/logger';
+import { getLogChannel } from '../utils/modUtils';
 
 const event: BotEvent = {
   name: Events.GuildMemberAdd,
   execute: async (member: GuildMember) => {
     // 1. Auto Role
-    const role = member.guild.roles.cache.find(r => r.name === 'Member');
+    const roleId = '1459184035489382430';
+    const role = member.guild.roles.cache.get(roleId);
     if (role) {
       await member.roles.add(role).catch(err => logger.error(`Failed to assign role: ${err}`));
     }
 
     // 2. Welcome Message
-    // Check DB for channel
+    // Check DB for channel or use config
     const guildConfig = await prisma.guildConfig.findUnique({ where: { id: member.guild.id } });
-    let channelId = guildConfig?.welcomeChannelId;
+    let channelId: string | undefined = guildConfig?.welcomeChannelId || config.welcomeChannelId;
     
     // Fallback search
     if (!channelId) {
@@ -37,6 +39,18 @@ const event: BotEvent = {
 
         await channel.send({ embeds: [embed] });
       }
+    }
+
+    // 3. Log Join
+    const logChannel = await getLogChannel(member.guild);
+    if (logChannel) {
+      const logEmbed = createEmbed(
+        'Member Joined',
+        `**User:** ${member.toString()} (${member.user.tag})\n**ID:** ${member.id}\n**Account Created:** <t:${Math.floor(member.user.createdTimestamp / 1000)}:R>`,
+        config.colors.success
+      ).setThumbnail(member.user.displayAvatarURL());
+      
+      await logChannel.send({ embeds: [logEmbed] });
     }
   },
 };

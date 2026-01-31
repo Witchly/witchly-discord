@@ -7,7 +7,7 @@ export const createEmbed = (title: string, description: string, color: ColorReso
     .setDescription(description)
     .setColor(color)
     .setTimestamp()
-    .setFooter({ text: 'Witchly.host System', iconURL: config.links.logo });
+    .setFooter({ text: 'Witchly.host', iconURL: config.links.logo });
 };
 
 export const createSuccessEmbed = (description: string) => createEmbed('Success', description, config.colors.success as ColorResolvable);

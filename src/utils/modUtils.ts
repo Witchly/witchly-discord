@@ -12,7 +12,11 @@ export async function getLogChannel(guild: Guild) {
     if (channel?.isTextBased()) return channel as TextChannel;
   }
 
-  // Fallback
+  // Use the specific moderation log channel from config
+  const configChannel = guild.channels.cache.get(config.moderationLogChannelId);
+  if (configChannel?.isTextBased()) return configChannel as TextChannel;
+
+  // Final fallback
   return guild.channels.cache.find(c => c.name === 'witchly-logs' && c.isTextBased()) as TextChannel | undefined;
 }
 

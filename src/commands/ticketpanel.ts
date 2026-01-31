@@ -11,10 +11,10 @@ const command: Command = {
   
   async execute(interaction) {
     const embed = createEmbed(
-      'Support Tickets',
-      'Click the button below to open a support ticket.\n\nOur team will assist you shortly.',
+      'Witchly.host Support',
+      '**Need assistance?**\nClick the button below to open a support ticket.\n\n**🛑 STOP & READ BEFORE OPENING:**\nMost questions are already answered in our Knowledge Base. Please check there first to save time!\n\n🔗 **[Read the Documentation](https://docs.witchly.host)**\n\n**If you still need help:**\n• You will be asked to provide a **Valid Reason** for your ticket.\n• "Hi" or "Help me" are NOT valid reasons.\n• Please describe your issue clearly so our team can assist you faster.',
       config.colors.primary
-    );
+    ).setImage(config.links.banner);
 
     const row = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(

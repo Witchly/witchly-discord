@@ -9,7 +9,9 @@ const command: Command = {
     .addUserOption(option => option.setName('user').setDescription('The user')),
   
   async execute(interaction) {
-    const user = interaction.options.getUser('user') || interaction.user;
+    const targetUser = interaction.options.getUser('user') || interaction.user;
+    // Fetch full user to get banner
+    const user = await interaction.client.users.fetch(targetUser.id, { force: true });
     const member = await interaction.guild?.members.fetch(user.id).catch(() => null);
 
     const embed = new EmbedBuilder()
@@ -22,6 +24,10 @@ const command: Command = {
         { name: 'Joined At', value: member?.joinedAt?.toDateString() || 'N/A', inline: true },
         { name: 'Roles', value: member?.roles.cache.map(r => r.toString()).join(' ') || 'None' }
       );
+
+    if (user.bannerURL()) {
+      embed.setImage(user.bannerURL({ size: 1024 })!);
+    }
 
     await interaction.reply({ embeds: [embed] });
   }
